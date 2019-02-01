@@ -105,6 +105,7 @@ int copyFolder(char origin[], char destiny[])
     while(sourceFolderEntry != NULL);
 
     closedir(source);
+    return 0; 
 }
 
 int main(int argc, char* argv[])
