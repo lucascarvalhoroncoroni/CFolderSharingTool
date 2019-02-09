@@ -1,8 +1,22 @@
-#define BUFFER_SIZE 4096 
+#define MESSAGE_BUFFER_SIZE 4096 
 #define MESSAGE_SIZE 50
+
+#define ESTABLISH_CONNECTION 431
+#define START_BACKUP 432
+#define FINISH_CONNECTION 439
+#define PIN_CODE 4311
+#define PIN_ACCEPTED 4312
+#define PIN_ERROR 4313
+#define BACKUP_FILE 4321
+#define BACKUP_FOLDER 4322
+#define BACKUP_FILE_NAME 43211
+#define BACKUP_FILE_STREAM 43212
+#define BACKUP_FILE_END 43213
+#define BACKUP_FOLDER_NAME 43221
+
 
 struct fileTransfering{
     int code;
     unsigned int messageSize;
-    char buffer[BUFFER_SIZE];
+    char buffer[MESSAGE_BUFFER_SIZE];
 };
