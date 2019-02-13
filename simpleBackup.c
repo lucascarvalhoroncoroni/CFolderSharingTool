@@ -23,11 +23,12 @@
  * @fileToSend string with the path of file. The file source and fileToSend are the same.
  */
 int sendFile(int connectionSocket, char fileToSend[], struct fileTransfering* message)
-{
-    if(fileToSend == NULL) return -1;
-    
+{    
     int source = open(fileToSend, O_RDONLY);
     ssize_t readedFromFile = 0, writenOnFile = 0;
+    struct stat fileInfo;
+
+    if(fileToSend == NULL) return -1;
 
     //STARTING FILE
     message->code = BACKUP_FILE_NAME;
@@ -46,8 +47,12 @@ int sendFile(int connectionSocket, char fileToSend[], struct fileTransfering* me
     
     //FINISHING FILE
     memset(message->buffer, 0, MESSAGE_BUFFER_SIZE);
-    message->messageSize = 0;
+
+    fstat(source, &fileInfo);
+    sprintf(message->buffer, "%u", fileInfo.st_mode);
+    message->messageSize = strlen(message->buffer);
     message->code = BACKUP_FILE_END;
+
     send(connectionSocket, message, sizeof(struct fileTransfering), 0);
     close(source);
     return 0;
@@ -119,13 +124,19 @@ int sendFolder(int connectionSocket, char streamToSend[], struct fileTransfering
 void startBackup(int socket, char folderToBackup[], struct fileTransfering* message)
 {
     message->code = START_BACKUP;
-    printf("STARTING TRANSMITING FILE\n");
+    printf("STARTING TRANSMITING BACKUP\n");
 
     memset(message->buffer, 0, MESSAGE_BUFFER_SIZE);
     send(socket, message, sizeof(struct fileTransfering), 0);
 
     sendFolder(socket, folderToBackup, message);
     
+    message->code = FINISH_BACKUP;
+    printf("FINISHING TRANSMITING BACKUP\n");
+
+    memset(message->buffer, 0, MESSAGE_BUFFER_SIZE);
+    send(socket, message, sizeof(struct fileTransfering), 0);
+
     return;
 }
 

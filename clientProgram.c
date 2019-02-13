@@ -35,6 +35,7 @@ void backUpFolder(int connectionSocket, struct fileTransfering* message)
     if(message->code == BACKUP_FOLDER_NAME)
     {
         strncpy(folderName, message->buffer, MESSAGE_BUFFER_SIZE + 1);
+        printf("CREATING FOLDER: %s\n", folderName);
         if(mkdir(folderName, 0777) == -1)
         {
             printf("can not create folder\n");
@@ -50,37 +51,38 @@ void backUpFolder(int connectionSocket, struct fileTransfering* message)
 void backUpFile(int connectionSocket, struct fileTransfering* message)
 {
     //Avoiding Apollo 13
+    int fileMode = 0766;
     char fileName[MESSAGE_BUFFER_SIZE + 1] = {0};
     int fileDesc = 0, writenOnFile = 0;
+    double fileSize = 0;
     recv(connectionSocket, message, sizeof(struct fileTransfering), 0); 
     if(message->code != BACKUP_FILE_NAME) return;
     strncpy(fileName, message->buffer, message->messageSize + 1);
     fileDesc = open(fileName, O_CREAT | O_RDWR);
+    printf("STARTING BACKUP OF FILE: %s\n", fileName);
 
-    //WRITING FILE
-    // do
-    // {
-    //     recv(connectionSocket, message, sizeof(struct fileTransfering), 0);
-    //     writenOnFile = write(fileDesc, message->buffer, message->messageSize);
-    //     printf("%d\n", writenOnFile);
-    //     printf("%d\n", message->messageSize);
-    //     fwrite(message->buffer, message->messageSize, sizeof(message->buffer), stdout);
-    //     fflush(stdout);
-    // }
-    // while(message->code == BACKUP_FILE_STREAM);
-
+    //STARTING FILE STREAM
     recv(connectionSocket, message, sizeof(struct fileTransfering), 0);
-    writenOnFile = write(fileDesc, message->buffer, message->messageSize);
-    printf("%d\n", message->code);
-    printf("%d\n", writenOnFile);
-    printf("%d\n", message->messageSize);
-    fwrite(message->buffer, sizeof(char), message->messageSize, stdout);
-    fflush(stdout);
-
-    recv(connectionSocket, message, sizeof(struct fileTransfering), 0);
-    printf("%d\n", message->code);
     
+    //WRITING FILE
+    do
+    {
+        writenOnFile = write(fileDesc, message->buffer, message->messageSize);
+        fileSize = fileSize + (double) writenOnFile;
+        recv(connectionSocket, message, sizeof(struct fileTransfering), 0);
+    }
+    while(message->code == BACKUP_FILE_STREAM);
+
+    printf("TOTAL FILE SIZE: %lfB\n", fileSize);
+
+    // fwrite(message->buffer, message->messageSize, sizeof(message->buffer), stdout);
+    // fflush(stdout);
+    
+    //FINISHING FILE
+    fileMode = atoi(message->buffer);
+    fchmod(fileDesc, fileMode); //Permissions given
     close(fileDesc);
+
     if(message->code != BACKUP_FILE_END)
     {
         goodByeMessage(connectionSocket, "NO FILE END REACHED BY THE SERVER");
@@ -111,6 +113,8 @@ void startBackUp(int connectionSocket, struct fileTransfering* message)
                 backUpFolder(connectionSocket, message);
                 break;
             
+            case FINISH_BACKUP:
+
             default:
                 return;
         }
